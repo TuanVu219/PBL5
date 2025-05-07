@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser,Group, Permission
 from utils.model_abstracts import Model
 from django.core.validators import RegexValidator
 from django.core.validators import MaxValueValidator, MinValueValidator
+from cloudinary.models import CloudinaryField
 from django_extensions.db.models import (
 	TimeStampedModel, 
 	ActivatorModel,
@@ -57,10 +58,7 @@ class Restaurant(Model):
         validators=[RegexValidator(r'^\d{10}$', 'Enter a valid phone number with exactly 10 digits')]
     )
     address_restaurant=models.CharField(max_length=100)
-    image = models.ImageField(
-        upload_to='images/',
-        default='images/default-ui-image-placeholder-wireframes-600nw-1037719192.webp'  # Đường dẫn tương đối trong MEDIA_ROOT
-    )
+    image = CloudinaryField('image', default='images/default-ui-image-placeholder-wireframes-600nw-1037719192.webp')
     def __str__(self):
         return self.restaurant_name
 class TypeFood(Model):
@@ -74,10 +72,8 @@ class MenuFood(Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     food_type = models.ForeignKey(TypeFood, on_delete=models.CASCADE, related_name="foodtype")
     food_name = models.CharField(max_length=100, null=False)
-    image = models.ImageField(
-        upload_to='images/',
-        default='images/default-ui-image-placeholder-wireframes-600nw-1037719192.webp'  # Đường dẫn tương đối trong MEDIA_ROOT
-    )
+    image = CloudinaryField('image', default='images/default-ui-image-placeholder-wireframes-600nw-1037719192.webp')
+
 
     def __str__(self):
         return f"{self.food_name} at {self.restaurant.restaurant_name}"

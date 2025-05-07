@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/53302d81-59c2-49d3-aa74-7e5f927564d0/resourceGroups/appsvc_linux_southeastasia/providers/Microsoft.Web/sites/ant-space-tours",
+    "appService.deploySubpath": "drf_course-main"
+}

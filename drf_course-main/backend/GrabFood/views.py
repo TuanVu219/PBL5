@@ -103,7 +103,10 @@ class LoginView(APIView):
                     response=Response()
                     response.set_cookie(key="refreshToken",value=refresh_token,httponly=True,secure=False, samesite='Lax')  # tránh bị chặn bởi trình duyệt)
                     response.data={
-                        'token':access_token
+                        'accessToken':access_token,
+                        'username':user.username,
+                        'password':user.password,
+                        'email':user.email,
                     }
                     return response
                 return Response({
@@ -265,15 +268,13 @@ class Restaurant_Retrieve(generics.RetrieveUpdateDestroyAPIView):
             
         
 
-class RestaurantList(generics.ListCreateAPIView):
-    queryset = Restaurant.objects.all()
-    serializer_class = RegisterRestaurant
-
-    def get(self, request, *args, **kwargs):
-        restaurants = self.get_queryset()
+class RestaurantList(APIView):
+    def post(self, request, *args, **kwargs):
+        # Lấy tất cả các nhà hàng từ cơ sở dữ liệu
+        restaurants = Restaurant.objects.all()
         serializer = RegisterRestaurant(restaurants, many=True, context={'request': request})
         return Response(serializer.data)
-
+  
 class AddFoodType(APIView):
     def post(self,request):
         try:

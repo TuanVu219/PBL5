@@ -1,6 +1,9 @@
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -12,10 +15,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = int(os.environ.get("DEBUG", default=0))
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1 localhost azuredjangotutorial-b6ajcnhzapgwg5e6.southeastasia-01.azurewebsites.net").split(" ")
 
 # Application definition
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') if not DEBUG else os.path.join(BASE_DIR, 'static')
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -32,6 +35,8 @@ INSTALLED_APPS = [
     'django_celery_beat',
      'corsheaders',
      'django_celery_results',
+    'cloudinary',
+    'cloudinary_storage',
 ]
 # RabbitMQ broker
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
@@ -46,6 +51,7 @@ CELERY_TIMEZONE = 'Asia/Ho_Chi_Minh'
 broker_connection_retry_on_startup = True
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -63,6 +69,8 @@ CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000']
 CORS_ALLOWED_ORIGINS = [
     'http://example.com',
     'http://172.20.10.4:8000',
+    'https://azuredjangotutorial-b6ajcnhzapgwg5e6.southeastasia-01.azurewebsites.net',
+
 ]
 CORS_ALLOW_METHODS = [
     'GET',
@@ -211,8 +219,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',  # Dùng TokenAuthentication cho JWT
     ),
 }
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = '/media/'
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  # Hoặc server SMTP bạn sử dụng
 EMAIL_PORT = 587
@@ -222,3 +229,12 @@ EMAIL_HOST_USER = 'doancongtuanvudn2004@gmail.com'
 EMAIL_HOST_PASSWORD = 'joop whjq cxya jwrq'
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# Cloudinary Configuration
+cloudinary.config(
+    cloud_name='dlxnanybw',
+    api_key='973276692497392',
+    api_secret='WKZWsMnM0QFHfX81s0HRtya_7Ic',
+)
+
+# Thêm vào phần cấu hình media storage cho Cloudinary
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

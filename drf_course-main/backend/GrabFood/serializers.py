@@ -63,14 +63,13 @@ class CustomerSerializer(serializers.ModelSerializer):
         fields=("age","phone","address","email","first_name","last_name")
         
 class RegisterRestaurant(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
-        model=Restaurant
-        fields=("id","restaurant_name","phone_restaurant","address_restaurant","image")
+        model = Restaurant
+        fields = ("id", "restaurant_name", "phone_restaurant", "address_restaurant", "image","user")
     def get_image(self, obj):
-        if obj.image:
-            request = self.context.get('request')
-            return request.build_absolute_uri(obj.image.url)
-        return None
+        return obj.image.url if obj.image else None
 class Serializer_FoodType(serializers.ModelSerializer):
     class Meta:
         model=TypeFood
@@ -83,11 +82,8 @@ class Serializer_Menu(serializers.ModelSerializer):
     class Meta:
         model=MenuFood
         fields=("restaurant","price","food_type","food_name",'image')
-    def get_image(self,obj):
-        if obj.image:
-            request=self.request.get('request')
-            return request.build_absolute_uri(obj.image.url)
-        return None
+    def get_image(self, obj):
+        return obj.image.url if obj.image else None
 
 class Serializer_ReviewMenu(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
