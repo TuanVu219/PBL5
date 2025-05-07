@@ -13,9 +13,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
-SECRET_KEY = os.environ.get("SECRET_KEY")
+SECRET_KEY = 'django-insecure-abc123xyz!@#'  # Thay bằng key thật của bạn
 DEBUG = int(os.environ.get("DEBUG", default=0))
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1 localhost azuredjangotutorial-b6ajcnhzapgwg5e6.southeastasia-01.azurewebsites.net").split(" ")
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS",
+    "127.0.0.1 localhost azuredjangotutorial-b6ajcnhzapgwg5e6.southeastasia-01.azurewebsites.net 54.206.226.104"
+).split(" ")
 
 # Application definition
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') if not DEBUG else os.path.join(BASE_DIR, 'static')
