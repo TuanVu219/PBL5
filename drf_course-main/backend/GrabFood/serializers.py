@@ -1,10 +1,11 @@
 from rest_framework import serializers
-from .models import User, Role,Customer,Restaurant,TypeFood,MenuFood,ReviewMenu,Shipper,Cart,CartItem,FavoriteMenu,Voucher
+from .models import User, Role,Customer,Restaurant,TypeFood,MenuFood,ReviewMenu,Shipper,Cart,CartItem,FavoriteMenu,Voucher,OptionMenu
 from django.contrib.auth.password_validation import validate_password
 import base64
 from io import BytesIO
 from PIL import Image
-
+from django.db.models import Avg  # Thêm dòng import này
+from collections import Counter
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password_confirmation = serializers.CharField(write_only=True, required=True)
@@ -64,32 +65,88 @@ class CustomerSerializer(serializers.ModelSerializer):
         
 class RegisterRestaurant(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
-
+    vouchers=serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
+    type_restaurant = serializers.SerializerMethodField()
     class Meta:
         model = Restaurant
-        fields = ("id", "restaurant_name", "phone_restaurant", "address_restaurant", "image","user")
+        fields = ("id", "restaurant_name", "phone_restaurant", "address_restaurant", "image","user","vouchers","average_rating","type_restaurant")
+    def get_average_rating(self, obj):
+        menus=obj.restaurant_menu.all()
+        total_rating = 0
+        count=0
+        
+        for menu in menus:
+            reviews = menu.menu_review.all()
+            if reviews.exists():
+                avg = reviews.aggregate(Avg('rating'))['rating__avg']
+                total_rating += avg
+                count += 1
+        if count > 0:
+            return round(total_rating / count, 1)
+        return None
     def get_image(self, obj):
         return obj.image.url if obj.image else None
+    def get_vouchers(self, obj):
+        vouchers = obj.vouchers.all()
+        if vouchers.exists():
+            return [voucher.value for voucher in vouchers]
+    def get_type_restaurant(self, obj):
+        menus=obj.restaurant_menu.all().select_related('food_type')
+        type_counter = Counter()
+        for menu in menus:
+            type_counter[menu.food_type.type_name] += 1
+        if type_counter:
+            most_common_type = type_counter.most_common(1)[0][0]
+            return most_common_type
+        return None
 class Serializer_FoodType(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
     class Meta:
         model=TypeFood
-        fields=("type_name",)
-
+        fields=("id","type_name", "image")
+    def get_image(self, obj):
+        return obj.image.url if obj.image else None
+class OptionMenuSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OptionMenu
+        fields = ['id', 'option_name','price']
 class Serializer_Menu(serializers.ModelSerializer):
     food_type = serializers.StringRelatedField()
     restaurant = serializers.PrimaryKeyRelatedField(queryset=Restaurant.objects.all())
     image = serializers.ImageField(required=False) 
+    option_menu = OptionMenuSerializer(many=True, read_only=True)  # dùng related_name trong model
     class Meta:
         model=MenuFood
-        fields=("restaurant","price","food_type","food_name",'image')
+        fields=("id","restaurant","price","food_type","food_name",'image','time','option_menu','description')
     def get_image(self, obj):
         return obj.image.url if obj.image else None
+    def create(self, validated_data):
+    # Lấy dữ liệu option_menu ra riêng
+        option_menu_data = self.initial_data.get("option_menu", [])
+
+    # Tạo menu
+        menu = MenuFood.objects.create(
+            restaurant=validated_data['restaurant'],
+            price=validated_data['price'],
+            food_type=validated_data['food_type'],
+            description=validated_data.get('description'),
+            food_name=validated_data['food_name'],
+            time=validated_data.get('time'),
+            image=validated_data.get('image', None),
+        )
+
+        # Tạo các OptionMenu liên quan
+        for option in option_menu_data:
+            OptionMenu.objects.create(menu=menu, option_name=option["option_name"],price=option["price"])
+
+        return menu
 
 class Serializer_ReviewMenu(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     menu = serializers.PrimaryKeyRelatedField(queryset=MenuFood.objects.all())
     class Meta:
-        model=ReviewMenu
+        model=ReviewMenu    
         fields=("user","menu","rating","comments")
 
 

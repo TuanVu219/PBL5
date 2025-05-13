@@ -56,7 +56,7 @@ urlpatterns += [
 # Menu URL
 urlpatterns += [
     path('addmenu/', AddMenu.as_view(), name='add_menu'),
-    path('menulist/<uuid:pk>/', MenuList.as_view(), name='menu_list'),
+    path('menulist/', MenuList.as_view(), name='menu_list'),
     path('retrieve_menu/<uuid:pk>/', Menu_Retrieve.as_view(), name='retrieve_menu'),
 ]
 

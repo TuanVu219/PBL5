@@ -25,6 +25,9 @@ import base64
 from django.core.files.base import ContentFile
 from io import BytesIO
 from PIL import Image
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.permissions import IsAuthenticated
+from .authentication import JWTAuthentication
 def home(request):
     return render(request,'home.html')
 # class PasswordResetRequestView(APIView):
@@ -103,6 +106,7 @@ class LoginView(APIView):
                     response=Response()
                     response.set_cookie(key="refreshToken",value=refresh_token,httponly=True,secure=False, samesite='Lax')  # tránh bị chặn bởi trình duyệt)
                     response.data={
+                        'refreshToken':refresh_token,
                         'accessToken':access_token,
                         'username':user.username,
                         'password':user.password,
@@ -269,11 +273,17 @@ class Restaurant_Retrieve(generics.RetrieveUpdateDestroyAPIView):
         
 
 class RestaurantList(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request, *args, **kwargs):
         # Lấy tất cả các nhà hàng từ cơ sở dữ liệu
-        restaurants = Restaurant.objects.all()
-        serializer = RegisterRestaurant(restaurants, many=True, context={'request': request})
-        return Response(serializer.data)
+        if request.user.is_authenticated:
+            restaurants = Restaurant.objects.all()
+            serializer = RegisterRestaurant(restaurants, many=True, context={'request': request})
+            
+            return Response(serializer.data)
+        else:
+            return Response({"error": "Unauthorized"}, status=401)
   
 class AddFoodType(APIView):
     def post(self,request):
@@ -293,9 +303,20 @@ class AddFoodType(APIView):
             return JsonResponse({"result": "error","message": "Json decoding error"}, status= 400)
 
 class FoodTypeList(generics.ListCreateAPIView):
-    queryset=TypeFood.objects.all()
-    serializer_class=Serializer_FoodType
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = Serializer_FoodType
 
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return TypeFood.objects.all()
+        else:
+            return TypeFood.objects.none()  # hoặc raise PermissionDenied nếu cần
+
+    def list(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().list(request, *args, **kwargs)
 class FoodType_Retrieve(generics.RetrieveUpdateDestroyAPIView):
     queryset=TypeFood.objects.all()
     serializer_class=Serializer_FoodType
@@ -335,22 +356,38 @@ class AddMenu(APIView):
         except JSONDecodeError:
             return JsonResponse({"result": "error","message": "Json decoding error"}, status= 400)
 
-class MenuList(APIView):
-  def get(self,request,pk):
-    try:
-        restaurant=Restaurant.objects.get(id=pk)
-        menu=MenuFood.objects.filter(restaurant=restaurant)
-        
-        serializer=Serializer_Menu(menu,many=True, context={'request': request})
-        if serializer:
-            
-            return Response(serializer.data, status=status.HTTP_200_OK)  # Trả về phản hồi thành công
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    except JSONDecodeError:
-            return JsonResponse({"result": "error","message": "Json decoding error"}, status= 400)
 
-        
+class MenuList(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @csrf_exempt
+    def post(self, request):
+        if self.request.user.is_authenticated:
+            try:
+                # Lấy restaurant_id từ dữ liệu gửi lên trong POST
+                restaurant_id = request.data.get('restaurant')
+
+                if not restaurant_id:
+                    return Response({"error": "restaurant_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Lấy nhà hàng từ ID
+                restaurant = Restaurant.objects.get(id=restaurant_id)
+                menu = MenuFood.objects.filter(restaurant=restaurant)
+
+                # Serialize dữ liệu
+                serializer = Serializer_Menu(menu, many=True, context={'request': request})
+
+                return Response(serializer.data, status=status.HTTP_200_OK)  # Trả về phản hồi thành công
+
+            except Restaurant.DoesNotExist:
+                return Response({"error": "Restaurant not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+
 class Menu_Retrieve(generics.RetrieveUpdateDestroyAPIView):
     queryset = MenuFood.objects.all()  # Khai báo queryset ở đây
     serializer_class = Serializer_Menu

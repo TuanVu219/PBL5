@@ -63,21 +63,35 @@ class Restaurant(Model):
         return self.restaurant_name
 class TypeFood(Model):
     type_name = models.CharField(max_length=100)
+    image = CloudinaryField('image', default='images/default-ui-image-placeholder-wireframes-600nw-1037719192.webp')
+
 
     def __str__(self):
         return self.type_name
 
 class MenuFood(Model):
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='restaurant_menu')
+    description= models.TextField(null=True, blank=True)
+    time=models.DurationField(null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     food_type = models.ForeignKey(TypeFood, on_delete=models.CASCADE, related_name="foodtype")
     food_name = models.CharField(max_length=100, null=False)
     image = CloudinaryField('image', default='images/default-ui-image-placeholder-wireframes-600nw-1037719192.webp')
 
-
     def __str__(self):
         return f"{self.food_name} at {self.restaurant.restaurant_name}"
 
+class OptionMenu(Model):
+    menu=models.ForeignKey(MenuFood, on_delete=models.CASCADE, related_name='option_menu')
+    option_name=models.CharField(max_length=100)
+    price=models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    def __str__(self):
+        return self.option_name
+class Option(Model):
+    menu=models.ForeignKey(MenuFood, on_delete=models.CASCADE, related_name='menu_option')
+    option_name=models.CharField(max_length=100)
+    def __str__(self):
+        return self.option_name
 class ReviewMenu(Model):
     user=models.ForeignKey(User,on_delete=models.CASCADE,related_name="user_review")
     menu=models.ForeignKey(MenuFood,on_delete=models.CASCADE,related_name="menu_review")
@@ -140,7 +154,7 @@ class FavoriteMenu(Model):
     menu=models.ManyToManyField(MenuFood,related_name='menu_favouritemenu')
     
 class Voucher(Model):
-    restaurant=models.ForeignKey(Restaurant,on_delete=models.CASCADE,related_name="restaurant_voucher")
+    restaurant=models.ForeignKey(Restaurant,on_delete=models.CASCADE,related_name="vouchers")
     value=models.IntegerField( null=False, blank=False)
     minimum_order_value = models.IntegerField(null=False, blank=False)
     expiration_date = models.DateTimeField(null=False, blank=False)
