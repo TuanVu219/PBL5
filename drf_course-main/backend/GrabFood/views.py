@@ -246,6 +246,7 @@ class LoginView(APIView):
                         'username':user.username,
                         'password':user.password,
                         'email':user.email,
+                        'id':user.id,
                     }
                     return response
                 return Response({
