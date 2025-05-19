@@ -8,7 +8,7 @@ from .views import (
     FoodType_Retrieve, AddMenu, MenuList, Menu_Retrieve, AddReviewMenu, 
     ListReviewMenu, ReviewMenu_Retrieve, RegisterShipper, Shipper_Retrieve, 
     AddCart, SearchCart,AddFavouriteMenu,ListFavouriteMenu,DeleteFavouriteMenu,AddCartItem,CartItem_List,DeleteCartItem,AddVoucher,UserAPIView,
-    RefreshAPIView
+    RefreshAPIView,ZaloPayCreateOrderView, serve_verification_file
 )
 from rest_framework.authtoken.views import obtain_auth_token
 from django.contrib.auth import views as auth_views
@@ -27,7 +27,13 @@ urlpatterns += [
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
     path('refresh-token/', RefreshAPIView.as_view(), name='refresh_token'),
 ]
-
+#Zalopay
+urlpatterns += [
+  path('create-order/', ZaloPayCreateOrderView.as_view(), name='zalopay-create-order'),
+  path('zalo_verifierHUIZSe7rUle3mjKSs_9zGoRJqslAfGKmC3Or.html', serve_verification_file),
+  path('zalopay/create-order/', views.create_zalopay_order, name='create_order'),
+  path('zalopay/callback/', views.zalopay_callback, name='callback'),
+]
 # QUan ly nguoi dung URL
 urlpatterns += [
     path('list_user/', UserList.as_view(), name='userlist'),

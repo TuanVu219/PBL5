@@ -28,6 +28,140 @@ from PIL import Image
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.permissions import IsAuthenticated
 from .authentication import JWTAuthentication
+import hmac
+import hashlib
+import json
+from time import time
+from datetime import datetime
+import random
+import requests
+from decouple import config
+import urllib.parse
+from django.shortcuts import redirect
+import logging
+from .models import Order  # Giả sử bạn có mô hình Order
+from django.http import FileResponse
+import os
+import uuid  # Thêm dòng này
+@csrf_exempt
+def zalopay_callback(request):
+    if request.method == "POST":
+        config = settings.ZALOPAY_CONFIG
+        result = {}
+        try:
+            post_data = request.body.decode('utf-8')
+            post_data_json = json.loads(post_data)
+            data_str = post_data_json["data"]
+            req_mac = post_data_json["mac"]
+
+            # Tính toán HMAC để kiểm tra tính hợp lệ
+            mac = hmac.new(
+                config["key2"].encode(), data_str.encode(), hashlib.sha256
+            ).hexdigest()
+
+            if req_mac != mac:
+                result["returncode"] = -1
+                result["returnmessage"] = "mac not equal"
+            else:
+                # Thanh toán thành công, cập nhật trạng thái đơn hàng
+                data_json = json.loads(data_str)
+                # Ví dụ: Cập nhật trạng thái trong database
+                # Order.objects.filter(app_trans_id=data_json["apptransid"]).update(status="success")
+                result["returncode"] = 1
+                result["returnmessage"] = "success"
+        except Exception as e:
+            result["returncode"] = 0  # Yêu cầu ZaloPay thử lại (tối đa 3 lần)
+            result["returnmessage"] = str(e)
+
+        return JsonResponse(result)
+    return JsonResponse({"error": "Method not allowed"}, status=405)
+@csrf_exempt
+def create_zalopay_order(request):
+    if request.method == "POST":
+        config = settings.ZALOPAY_CONFIG
+        order = {
+            "appid": config["app_id"],
+            "apptransid": "{:%y%m%d}_{}".format(datetime.today(), uuid.uuid4()),  # Mã giao dịch định dạng yyMMdd_xxxx
+            "appuser": "demo_user",  # Tên người dùng
+            "apptime": int(round(time() * 1000)),  # Thời gian tạo (milliseconds)
+            "embeddata": json.dumps({"merchantinfo": "embeddata123"}),  # Dữ liệu bổ sung
+            "item": json.dumps([
+                {"itemid": "knb", "itemname": "kim nguyen bao", "itemprice": 198400, "itemquantity": 1}
+            ]),  # Danh sách sản phẩm
+            "amount": 50000,  # Số tiền (VND)
+            "description": "ZaloPay Integration Demo",
+            "bankcode": "zalopayapp",  # Phương thức thanh toán
+        }
+
+        # Tạo chuỗi HMAC
+        data = "{}|{}|{}|{}|{}|{}|{}".format(
+            order["appid"], order["apptransid"], order["appuser"], order["amount"],
+            order["apptime"], order["embeddata"], order["item"]
+        )
+        order["mac"] = hmac.new(
+            config["key1"].encode(), data.encode(), hashlib.sha256
+        ).hexdigest()
+
+        # Gửi yêu cầu tới ZaloPay
+        try:
+            response = urllib.request.urlopen(
+                url=config["endpoint"],
+                data=urllib.parse.urlencode(order).encode()
+            )
+            result = json.loads(response.read())
+            return JsonResponse(result)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+    return JsonResponse({"error": "Method not allowed"}, status=405)
+class ZaloPayCreateOrderView(APIView):
+    def post(self, request):
+        # Cấu hình ZaloPay
+        zalo_config = {
+            "app_id": config("ZALOPAY_APP_ID", default="4428845388423879238"),
+            "key1": config("ZALOPAY_KEY1", default="XJemOIVQVt7MR9I8ZguQ"),
+            "key2": config("ZALOPAY_KEY2", default="kLtgPl8HHhfvMuDHPwKfgfsY4Ydm9eIz"),
+            "endpoint": "https://sb-openapi.zalopay.vn/v2/create"
+        }
+
+        trans_id = 123456  # Thay bằng random.randrange(1000000) nếu cần
+        order = {
+            "app_id": zalo_config["app_id"],  # Truy cập đúng từ dictionary
+            "app_trans_id": f"{int(time() * 1000)}_{trans_id}",
+            "app_user": "demo",
+            "app_time": int(round(time() * 1000)),
+            "embed_data": json.dumps({"preferred_payment_method": ["vietqr"]}),
+            "item": json.dumps([{"id": "item1", "name": "Sản phẩm 1", "price": 10000, "quantity": 1}]),
+            "amount": request.data.get("amount", 10000),
+            "description": f"Thanh toán đơn hàng #{trans_id}",
+            "bank_code": ""
+        }
+
+        # Tính MAC
+        data = "|".join([str(order[k]) for k in ["app_id", "app_trans_id", "app_user", "amount", "app_time", "embed_data", "item"]])
+        order["mac"] = hmac.new(zalo_config["key1"].encode(), data.encode(), hashlib.sha256).hexdigest()
+
+        # Gửi yêu cầu
+        response = requests.post(
+            zalo_config["endpoint"],
+            data=order,
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        result = response.json()
+
+        if result.get("return_code") == 1:
+            return Response({
+                "message": "Tạo đơn hàng thành công",
+                "order_url": result.get("order_url"),
+                "qr_code": result.get("qr_code")
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "message": "Tạo đơn hàng thất bại",
+                "error": result
+            }, status=status.HTTP_400_BAD_REQUEST)
+def serve_verification_file(request):
+    file_path = os.path.join(os.path.dirname(__file__), 'static', 'zalo_verifierHUIZSe7rUIe3mjKSs_9zGoRJqslAfGKmC3Or.html')
+    return FileResponse(open(file_path, 'rb'), content_type='text/html')
 def home(request):
     return render(request,'home.html')
 # class PasswordResetRequestView(APIView):

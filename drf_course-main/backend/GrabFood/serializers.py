@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Role,Customer,Restaurant,TypeFood,MenuFood,ReviewMenu,Shipper,Cart,CartItem,FavoriteMenu,Voucher,OptionMenu
+from .models import User, Role,Customer,Restaurant,TypeFood,MenuFood,ReviewMenu,Shipper,Cart,CartItem,FavoriteMenu,Voucher,OptionMenu,Order
 from django.contrib.auth.password_validation import validate_password
 import base64
 from io import BytesIO
@@ -43,7 +43,19 @@ class RegisterSerializer(serializers.ModelSerializer):
         customer.save()
         return user
     
+class OrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ['order_id', 'amount', 'order_desc', 'status', 'created_at']
 
+class PaymentCreateSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    order_desc = serializers.CharField(max_length=255)
+
+class PaymentReturnSerializer(serializers.Serializer):
+    order_id = serializers.CharField()
+    status = serializers.CharField()
+    message = serializers.CharField()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model=User

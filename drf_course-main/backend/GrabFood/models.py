@@ -80,11 +80,19 @@ class MenuFood(Model):
 
     def __str__(self):
         return f"{self.food_name} at {self.restaurant.restaurant_name}"
+class Order(models.Model):
+    order_id = models.CharField(max_length=50, unique=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    order_desc = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, default='pending')
 
+    def __str__(self):
+        return self.order_id
 class OptionMenu(Model):
     menu=models.ForeignKey(MenuFood, on_delete=models.CASCADE, related_name='option_menu')
     option_name=models.CharField(max_length=100)
-    price=models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    price=models.DecimalField(max_digits=10, decimal_places=2, blank=True,default=0)
     def __str__(self):
         return self.option_name
 class Option(Model):

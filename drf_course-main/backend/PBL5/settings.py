@@ -5,7 +5,7 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 load_dotenv()
-
+from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -19,7 +19,13 @@ ALLOWED_HOSTS = os.environ.get(
     "DJANGO_ALLOWED_HOSTS",
     "127.0.0.1 localhost azuredjangotutorial-b6ajcnhzapgwg5e6.southeastasia-01.azurewebsites.net 54.206.226.104"
 ).split(" ")
-
+ZALOPAY_CONFIG = {
+    "app_id": 554,  # Thay bằng app_id của bạn
+    "key1": "8NdU5pG5R2spGHGhyO99HN1OhD8IQJBn",  # Thay bằng key1
+    "key2": "uUfsWgfLkRLzq6W2uNXTCxrfxs51auny",  # Thay bằng key2
+    "endpoint": "https://sandbox.zalopay.com.vn/v001/tpe/createorder",  # URL sandbox
+    "callback_url": "https://your-domain.com/zalopay/callback",  # URL callback
+}
 # Application definition
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') if not DEBUG else os.path.join(BASE_DIR, 'static')
 INSTALLED_APPS = [
@@ -43,6 +49,7 @@ INSTALLED_APPS = [
 ]
 # RabbitMQ broker
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+# settings.py
 
 # Redis làm backend (hoặc bạn có thể dùng database backend)
 CELERY_RESULT_BACKEND = 'django-db'
