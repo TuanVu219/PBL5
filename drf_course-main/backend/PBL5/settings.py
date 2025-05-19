@@ -14,13 +14,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 SECRET_KEY = 'django-insecure-abc123xyz!@#'  # Thay bằng key thật của bạn
-DEBUG = True
-ALLOWED_HOSTS = os.environ.get(
-    "DJANGO_ALLOWED_HOSTS",
-    "127.0.0.1 localhost azuredjangotutorial-b6ajcnhzapgwg5e6.southeastasia-01.azurewebsites.net 54.206.226.104",
-    "54.206.226.104"
-    
-).split(" ")
+DEBUG = config('DEBUG', default=False, cast=bool)
+
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='127.0.0.1 localhost').split(' ')
 ZALOPAY_CONFIG = {
     "app_id": 554,  # Thay bằng app_id của bạn
     "key1": "8NdU5pG5R2spGHGhyO99HN1OhD8IQJBn",  # Thay bằng key1
