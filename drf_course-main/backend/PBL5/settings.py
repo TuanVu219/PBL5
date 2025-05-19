@@ -1,11 +1,11 @@
 from pathlib import Path
+from decouple import config
 from dotenv import load_dotenv
 import os
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 load_dotenv()
-from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 SECRET_KEY = 'django-insecure-abc123xyz!@#'  # Thay bằng key thật của bạn
-DEBUG = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = ['*']
 
 ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='127.0.0.1 localhost').split(' ')
 ZALOPAY_CONFIG = {

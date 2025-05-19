@@ -81,16 +81,16 @@ def create_zalopay_order(request):
         config = settings.ZALOPAY_CONFIG
         order = {
             "appid": config["app_id"],
-            "apptransid": "{:%y%m%d}_{}".format(datetime.today(), uuid.uuid4()),  # Mã giao dịch định dạng yyMMdd_xxxx
-            "appuser": "demo_user",  # Tên người dùng
-            "apptime": int(round(time() * 1000)),  # Thời gian tạo (milliseconds)
-            "embeddata": json.dumps({"merchantinfo": "embeddata123"}),  # Dữ liệu bổ sung
-            "item": json.dumps([
+            "apptransid": "{:%y%m%d}_{}".format(datetime.today(), uuid.uuid4()),
+            "appuser": data.get("appuser", "demo_user"),
+            "apptime": int(round(time() * 1000)),
+            "embeddata": json.dumps(data.get("embeddata", {"merchantinfo": "embeddata123"})),
+            "item": json.dumps(data.get("item", [
                 {"itemid": "knb", "itemname": "kim nguyen bao", "itemprice": 198400, "itemquantity": 1}
-            ]),  # Danh sách sản phẩm
-            "amount": 50000,  # Số tiền (VND)
-            "description": "ZaloPay Integration Demo",
-            "bankcode": "zalopayapp",  # Phương thức thanh toán
+            ])),
+            "amount": data.get("amount", 50000),
+            "description": data.get("description", "ZaloPay Integration Demo"),
+            "bankcode": data.get("bankcode", "zalopayapp"),
         }
 
         # Tạo chuỗi HMAC
