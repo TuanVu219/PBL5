@@ -78,6 +78,7 @@ def zalopay_callback(request):
 @csrf_exempt
 def create_zalopay_order(request):
     if request.method == "POST":
+        data = json.loads(request.body)
         config = settings.ZALOPAY_CONFIG
         order = {
             "appid": config["app_id"],
